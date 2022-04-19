@@ -22,7 +22,7 @@ subprojects {
     group = "com.openosrs"
 
     project.extra["PluginProvider"] = "Gaels"
-    project.extra["ProjectUrl"] = ""
+    project.extra["ProjectSupportUrl"] = ""
     project.extra["PluginLicense"] = "3-Clause BSD License"
 
     repositories {
