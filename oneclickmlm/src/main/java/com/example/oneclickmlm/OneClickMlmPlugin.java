@@ -3,9 +3,7 @@ package com.example.oneclickmlm;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 
-import com.openosrs.client.game.WorldLocation;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.queries.*;
@@ -18,7 +16,7 @@ import org.pf4j.Extension;
 import net.runelite.api.Perspective;
 import net.runelite.api.WallObject;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.api.Varbits;
+import net.runelite.api.ItemID;
 
 
 import java.util.*;
@@ -55,9 +53,9 @@ public class OneClickMlmPlugin extends Plugin {
         return configManager.getConfig(OneClickMlmConfig.class);
     }
 
-    Set<Integer> GEMS = Set.of(1623,1621,1619,1617);
+    Set<Integer> GEMS = Set.of(ItemID.UNCUT_SAPPHIRE,ItemID.UNCUT_EMERALD,ItemID.UNCUT_RUBY,ItemID.UNCUT_DIAMOND);
     Set<Integer> MINING_ANIMATION = Set.of(6752,6758,8344,4481,7282,8345);
-    private final int PAYDIRT = 12011;
+    private final int PAYDIRT = ItemID.PAYDIRT;
     private static final int UPPER_FLOOR_HEIGHT = -490;
 
     private int currSackSize;
@@ -79,8 +77,6 @@ public class OneClickMlmPlugin extends Plugin {
     private WorldPoint brokenWheelSouth = new WorldPoint(3742,5663,0);
 
     private boolean repairingWheel = false;
-    private boolean southWheelRepaired = true;
-    private boolean northWheelRepaired = true;
 
     private boolean dropGems;
 
@@ -110,24 +106,10 @@ public class OneClickMlmPlugin extends Plugin {
             timeout--;
         }
 
-        if (config.repairWheel()){
-            if(isSingleWheelBroken(brokenWheelNorth)) {
-                northWheelRepaired = false;
-            } else{
-                northWheelRepaired = true;
-            }
-
-            if(isSingleWheelBroken(brokenWheelSouth)){
-                southWheelRepaired = false;
-            } else{
-                southWheelRepaired = true;
-            }
-
-            if(!northWheelRepaired && !southWheelRepaired){
+        if (config.repairNorthWheel()) {
+            if (isSingleWheelBroken(brokenWheelNorth) && isSingleWheelBroken(brokenWheelSouth)) {
                 repairingWheel = true;
-            }
-
-            if(northWheelRepaired && southWheelRepaired){
+            } else {
                 repairingWheel = false;
             }
         }
@@ -138,10 +120,8 @@ public class OneClickMlmPlugin extends Plugin {
     {
         if(event.getGroup().equals("OneClickMlm"))
         {
-            if (!config.repairWheel()){
+            if (!config.repairNorthWheel()){
                 repairingWheel = false;
-                northWheelRepaired = true;
-                southWheelRepaired = true;
             }
 
             if(config.largeSack()){
@@ -175,49 +155,80 @@ public class OneClickMlmPlugin extends Plugin {
         }
     }
 
-    private WidgetItem getInventoryItem(int id) {
+
+    public Widget getWidgetItem(int ids) {
         Widget inventoryWidget = client.getWidget(WidgetInfo.INVENTORY);
-        if (inventoryWidget != null) {
-            Collection<WidgetItem> items = inventoryWidget.getWidgetItems();
-            for (WidgetItem item : items) {
-                if (item.getId() == id) {
+        if (inventoryWidget != null && inventoryWidget.getChildren() != null) {
+            System.out.println("inside if");
+            Widget[] items = inventoryWidget.getChildren();
+            for (Widget item : items) {
+                System.out.println("inside for");
+                if (ids == item.getItemId()) {
+                    System.out.println("INSIDE WIDGET ITEM If,For,If");
                     return item;
                 }
             }
         }
+        System.out.println("getWidget NULL");
         return null;
     }
 
-    @Nullable
-    private Collection<WidgetItem> getInventoryItems() {
-        Widget inventory = client.getWidget(WidgetInfo.INVENTORY);
-        if (inventory == null) {
-            return null;
+    private int getEmptySlots() {
+        Widget inventory = client.getWidget(WidgetInfo.INVENTORY.getId());
+        Widget bankInventory = client.getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER.getId());
+        Widget depositBoxInventory = client.getWidget(WidgetInfo.DEPOSIT_BOX_INVENTORY_ITEMS_CONTAINER.getId());
+
+        if (inventory!=null && !inventory.isHidden()
+                && inventory.getDynamicChildren()!=null)
+        {
+            List<Widget> inventoryItems = Arrays.asList(client.getWidget(WidgetInfo.INVENTORY.getId()).getDynamicChildren());
+            return (int) inventoryItems.stream().filter(item -> item.getItemId() == 6512).count();
         }
-        return new ArrayList<>(inventory.getWidgetItems());
+
+        if (bankInventory!=null && !bankInventory.isHidden()
+                && bankInventory.getDynamicChildren()!=null)
+        {
+            List<Widget> inventoryItems = Arrays.asList(client.getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER.getId()).getDynamicChildren());
+            return (int) inventoryItems.stream().filter(item -> item.getItemId() == 6512).count();
+        }
+
+        if (depositBoxInventory!=null && !depositBoxInventory.isHidden()
+                && depositBoxInventory.getDynamicChildren()!=null)
+        {
+            List<Widget> inventoryItems = Arrays.asList(client.getWidget(WidgetInfo.DEPOSIT_BOX_INVENTORY_ITEMS_CONTAINER.getId()).getDynamicChildren());
+            return (int) inventoryItems.stream().filter(item -> item.getItemId() == 6512).count();
+        }
+
+        return -1;
     }
 
-    public int getInventQuantity(Integer itemId) {
-        Collection<WidgetItem> inventoryItems = getInventoryItems();
-        if (inventoryItems == null) {
-            return 0;
-        }
-        int count = 0;
-        for (WidgetItem inventoryItem : inventoryItems) {
-            if (inventoryItem.getId() == itemId) {
-                count += 1;
-            }
-        }
-        return count;
-    }
+    private int getInventQuantity(int itemId) {
+        Widget inventory = client.getWidget(WidgetInfo.INVENTORY.getId());
+        Widget bankInventory = client.getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER.getId());
+        Widget depositBoxInventory = client.getWidget(WidgetInfo.DEPOSIT_BOX_INVENTORY_ITEMS_CONTAINER.getId());
 
-    public int getEmptySlots() {
-        Widget inventoryWidget = client.getWidget(WidgetInfo.INVENTORY);
-        if (inventoryWidget != null) {
-            return 28 - inventoryWidget.getWidgetItems().size();
-        } else {
-            return -1;
+        if (inventory!=null && !inventory.isHidden()
+                && inventory.getDynamicChildren()!=null)
+        {
+            List<Widget> inventoryItems = Arrays.asList(client.getWidget(WidgetInfo.INVENTORY.getId()).getDynamicChildren());
+            return (int) inventoryItems.stream().filter(item -> item.getItemId() == itemId).count();
         }
+
+        if (bankInventory!=null && !bankInventory.isHidden()
+                && bankInventory.getDynamicChildren()!=null)
+        {
+            List<Widget> inventoryItems = Arrays.asList(client.getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER.getId()).getDynamicChildren());
+            return (int) inventoryItems.stream().filter(item -> item.getItemId() == itemId).count();
+        }
+
+        if (depositBoxInventory!=null && !depositBoxInventory.isHidden()
+                && depositBoxInventory.getDynamicChildren()!=null)
+        {
+            List<Widget> inventoryItems = Arrays.asList(client.getWidget(WidgetInfo.DEPOSIT_BOX_INVENTORY_ITEMS_CONTAINER.getId()).getDynamicChildren());
+            return (int) inventoryItems.stream().filter(item -> item.getItemId() == itemId).count();
+        }
+
+        return -1;
     }
 
     private GameObject getGameObject(int ID) {
@@ -247,6 +258,17 @@ public class OneClickMlmPlugin extends Plugin {
             return ((GameObject) tileObject).getSceneMinLocation();
         }
         return new Point(tileObject.getLocalLocation().getSceneX(), tileObject.getLocalLocation().getSceneY());
+    }
+
+    public MenuEntry createMenuEntry(int identifier, int type, int param0, int param1, boolean forceLeftClick) {
+        return client.createMenuEntry(
+                "",
+                "",
+                identifier,
+                type,
+                param0,
+                param1,
+                forceLeftClick);
     }
 
     public MenuEntry createMenuEntry(int identifier, MenuAction type, int param0, int param1, boolean forceLeftClick) {
@@ -298,9 +320,9 @@ public class OneClickMlmPlugin extends Plugin {
         {
             for (int gem:GEMS)
             {
-                if (getInventoryItem(gem)!=null)
+                if (getWidgetItem(gem)!=null)
                 {
-                    event.setMenuEntry(dropGemMES(getInventoryItem(gem)));
+                    event.setMenuEntry(dropGemMES(getWidgetItem(gem)));
                     return;
                 }
             }
@@ -326,7 +348,7 @@ public class OneClickMlmPlugin extends Plugin {
                 }
             }
 
-            else if (getEmptySlots() == 0 && (dropGems && !checkForGems())) {
+            else if (getEmptySlots() == 0 && ((dropGems && !checkForGems()) || !dropGems)) {
                 if (checkCoords() && config.area() == OneClickMlmAreas.middle) {
                     System.out.println("MINING ROCK");
                     event.setMenuEntry(mineRock());
@@ -346,17 +368,13 @@ public class OneClickMlmPlugin extends Plugin {
 
         else{ //we are on the main level
             if(getInventQuantity(PAYDIRT) >= 1){
-                if(repairingWheel && config.repairWheel()){
+                if(repairingWheel){
                     System.out.println("REPAIRING WHEEL");
                     repairWheel(event);
                 }
-                else if(!repairingWheel) {
+                else {
                     System.out.println("DEPOSIT DIRT");
                     event.setMenuEntry(clickHopper());
-                }
-
-                else{
-                    System.out.println("WHEEL ISSUES");
                 }
             }
 
@@ -366,7 +384,7 @@ public class OneClickMlmPlugin extends Plugin {
             }
 
             else if (getEmptySlots()<(28-getInventQuantity(2347)) && getInventQuantity(PAYDIRT)==0 && !bankOpen()){
-                System.out.println("OPEN BANK");
+                System.out.println("OPEN DEPOSIT BOX");
                 event.setMenuEntry(openDepositBox());
             }
 
@@ -379,6 +397,12 @@ public class OneClickMlmPlugin extends Plugin {
             else if (getEmptySlots() == (28-getInventQuantity(2347)) && needToDeposit == false){
                 System.out.println("CLICK UPSTAIRS");
                 event.setMenuEntry(clickStairsUp());
+            }
+
+            else{
+                System.out.println("IN ELSE, SOMETHING WENT WRONG");
+                System.out.println(getInventQuantity(PAYDIRT));
+                System.out.println(bankOpen());
             }
         }
     }
@@ -396,7 +420,7 @@ public class OneClickMlmPlugin extends Plugin {
 
     private boolean checkForGems(){
         for (int gem:GEMS) {
-            if (getInventoryItem(gem) != null) {
+            if (getWidgetItem(gem) != null) {
                 return true;
             }
         }
@@ -558,23 +582,23 @@ public class OneClickMlmPlugin extends Plugin {
                 getLocation(customWallObject).getY(), true);
     }
 
-    private MenuEntry dropGemMES(WidgetItem gem){
+    private MenuEntry dropGemMES(Widget gem){
         return createMenuEntry(
-                gem.getId(),
-                MenuAction.ITEM_FIFTH_OPTION,
+                7,
+                MenuAction.CC_OP_LOW_PRIORITY,
                 gem.getIndex(),
-                9764864,
+                WidgetInfo.INVENTORY.getId(),
                 false);
     }
 
     private MenuEntry dropPaydirt(){
-        WidgetItem paydirt_item = getInventoryItem(PAYDIRT);
+        Widget paydirt_item = getWidgetItem(PAYDIRT);
 
         return createMenuEntry(
-                paydirt_item.getId(),
-                MenuAction.ITEM_FIFTH_OPTION,
+                7,
+                MenuAction.CC_OP_LOW_PRIORITY,
                 paydirt_item.getIndex(),
-                9764864,
+                WidgetInfo.INVENTORY.getId(),
                 false);
     }
 
@@ -648,7 +672,7 @@ public class OneClickMlmPlugin extends Plugin {
             event.setMenuEntry(withdrawHammer());
             timeout++;
         }
-        else if (northWheelRepaired==false){
+        else if (repairingWheel && config.repairNorthWheel()){
             //click north wheel strut
             GameObject northWheel = new GameObjectQuery()
                     .atWorldLocation(brokenWheelNorth)
@@ -656,17 +680,6 @@ public class OneClickMlmPlugin extends Plugin {
             System.out.println("REPAIR NORTH WHEEL");
             event.setMenuEntry(clickWheel(northWheel));
             timeout++;
-            northWheelRepaired = true;
-        }
-        else if (southWheelRepaired==false){
-            //click south wheel strut
-            GameObject southWheel = new GameObjectQuery()
-                    .atWorldLocation(brokenWheelSouth)
-                    .result(client).first();
-            System.out.println("REPAIR SOUTH WHEEL");
-            event.setMenuEntry(clickWheel(southWheel));
-            timeout++;
-            southWheelRepaired = true;
         }
     }
 }

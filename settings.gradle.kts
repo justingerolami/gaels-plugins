@@ -25,8 +25,7 @@
 
 rootProject.name = "gaels-plugins"
 
-include(":oneclickherblore")
-include(":oneclickglassmaking")
+
 include(":oneclickmlm")
 
 

@@ -42,7 +42,7 @@ public interface OneClickMlmConfig extends Config
 	default boolean useSpec(){return false;}
 
 	@ConfigItem(
-			position = 1,
+			position = 2,
 			keyName = "dropGems",
 			name = "Drop Gems",
 			description = "Drops gems if enabled "
@@ -50,15 +50,15 @@ public interface OneClickMlmConfig extends Config
 	default boolean dropGems(){return true;}
 
 	@ConfigItem(
-			position = 2,
-			keyName = "repairWheel",
-			name = "Repair Wheel",
-			description = "Repairs wheel if enabled "
+			position = 3,
+			keyName = "repairNorthWheel",
+			name = "Repair North Wheel",
+			description = "Repairs north wheel if enabled "
 	)
-	default boolean repairWheel(){return true;}
+	default boolean repairNorthWheel(){return true;}
 
 	@ConfigItem(
-			position = 2,
+			position = 4,
 			keyName = "largeSack",
 			name = "Use Large Sack",
 			description = "Enable if you have the large sack unlocked "
@@ -66,7 +66,7 @@ public interface OneClickMlmConfig extends Config
 	default boolean largeSack(){return false;}
 
 	@ConfigItem(
-			position = 3,
+			position = 5,
 			keyName = "area",
 			name = "Area of mine to use",
 			description = "Choose which area the plugin will use"
