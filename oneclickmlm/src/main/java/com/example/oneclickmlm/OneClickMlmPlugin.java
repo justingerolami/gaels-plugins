@@ -159,17 +159,13 @@ public class OneClickMlmPlugin extends Plugin {
     public Widget getWidgetItem(int ids) {
         Widget inventoryWidget = client.getWidget(WidgetInfo.INVENTORY);
         if (inventoryWidget != null && inventoryWidget.getChildren() != null) {
-            System.out.println("inside if");
             Widget[] items = inventoryWidget.getChildren();
             for (Widget item : items) {
-                System.out.println("inside for");
                 if (ids == item.getItemId()) {
-                    System.out.println("INSIDE WIDGET ITEM If,For,If");
                     return item;
                 }
             }
         }
-        System.out.println("getWidget NULL");
         return null;
     }
 

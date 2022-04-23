@@ -155,18 +155,18 @@ public class OneClickHerblorePlugin extends Plugin {
             timeout--;
         }
 
-        if ((getInventoryItem(ItemID1) == null && getInventoryItem(ItemID2) == null) && !bankOpen()) {
+        if ((getWidgetItem(ItemID1) == null && getWidgetItem(ItemID2) == null) && !bankOpen()) {
             timeout = 0;
             stage = 1;
         }
     }
 
-    private WidgetItem getInventoryItem(int id) {
+    public Widget getWidgetItem(int ids) {
         Widget inventoryWidget = client.getWidget(WidgetInfo.INVENTORY);
-        if (inventoryWidget != null) {
-            Collection<WidgetItem> items = inventoryWidget.getWidgetItems();
-            for (WidgetItem item : items) {
-                if (item.getId() == id) {
+        if (inventoryWidget != null && inventoryWidget.getChildren() != null) {
+            Widget[] items = inventoryWidget.getChildren();
+            for (Widget item : items) {
+                if (ids == item.getItemId()) {
                     return item;
                 }
             }
@@ -174,36 +174,62 @@ public class OneClickHerblorePlugin extends Plugin {
         return null;
     }
 
-    @Nullable
-    private Collection<WidgetItem> getInventoryItems() {
-        Widget inventory = client.getWidget(WidgetInfo.INVENTORY);
-        if (inventory == null) {
-            return null;
+    private int getEmptySlots() {
+        Widget inventory = client.getWidget(WidgetInfo.INVENTORY.getId());
+        Widget bankInventory = client.getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER.getId());
+        Widget depositBoxInventory = client.getWidget(WidgetInfo.DEPOSIT_BOX_INVENTORY_ITEMS_CONTAINER.getId());
+
+        if (inventory!=null && !inventory.isHidden()
+                && inventory.getDynamicChildren()!=null)
+        {
+            List<Widget> inventoryItems = Arrays.asList(client.getWidget(WidgetInfo.INVENTORY.getId()).getDynamicChildren());
+            return (int) inventoryItems.stream().filter(item -> item.getItemId() == 6512).count();
         }
-        return new ArrayList<>(inventory.getWidgetItems());
+
+        if (bankInventory!=null && !bankInventory.isHidden()
+                && bankInventory.getDynamicChildren()!=null)
+        {
+            List<Widget> inventoryItems = Arrays.asList(client.getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER.getId()).getDynamicChildren());
+            return (int) inventoryItems.stream().filter(item -> item.getItemId() == 6512).count();
+        }
+
+        if (depositBoxInventory!=null && !depositBoxInventory.isHidden()
+                && depositBoxInventory.getDynamicChildren()!=null)
+        {
+            List<Widget> inventoryItems = Arrays.asList(client.getWidget(WidgetInfo.DEPOSIT_BOX_INVENTORY_ITEMS_CONTAINER.getId()).getDynamicChildren());
+            return (int) inventoryItems.stream().filter(item -> item.getItemId() == 6512).count();
+        }
+
+        return -1;
     }
 
-    public int getInventQuantity(Integer itemId) {
-        Collection<WidgetItem> inventoryItems = getInventoryItems();
-        if (inventoryItems == null) {
-            return 0;
-        }
-        int count = 0;
-        for (WidgetItem inventoryItem : inventoryItems) {
-            if (inventoryItem.getId() == itemId) {
-                count += 1;
-            }
-        }
-        return count;
-    }
+    private int getInventQuantity(int itemId) {
+        Widget inventory = client.getWidget(WidgetInfo.INVENTORY.getId());
+        Widget bankInventory = client.getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER.getId());
+        Widget depositBoxInventory = client.getWidget(WidgetInfo.DEPOSIT_BOX_INVENTORY_ITEMS_CONTAINER.getId());
 
-    public int getEmptySlots() {
-        Widget inventoryWidget = client.getWidget(WidgetInfo.INVENTORY);
-        if (inventoryWidget != null) {
-            return 28 - inventoryWidget.getWidgetItems().size();
-        } else {
-            return -1;
+        if (inventory!=null && !inventory.isHidden()
+                && inventory.getDynamicChildren()!=null)
+        {
+            List<Widget> inventoryItems = Arrays.asList(client.getWidget(WidgetInfo.INVENTORY.getId()).getDynamicChildren());
+            return (int) inventoryItems.stream().filter(item -> item.getItemId() == itemId).count();
         }
+
+        if (bankInventory!=null && !bankInventory.isHidden()
+                && bankInventory.getDynamicChildren()!=null)
+        {
+            List<Widget> inventoryItems = Arrays.asList(client.getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER.getId()).getDynamicChildren());
+            return (int) inventoryItems.stream().filter(item -> item.getItemId() == itemId).count();
+        }
+
+        if (depositBoxInventory!=null && !depositBoxInventory.isHidden()
+                && depositBoxInventory.getDynamicChildren()!=null)
+        {
+            List<Widget> inventoryItems = Arrays.asList(client.getWidget(WidgetInfo.DEPOSIT_BOX_INVENTORY_ITEMS_CONTAINER.getId()).getDynamicChildren());
+            return (int) inventoryItems.stream().filter(item -> item.getItemId() == itemId).count();
+        }
+
+        return -1;
     }
 
     private GameObject getGameObject(int ID) {
@@ -296,9 +322,10 @@ public class OneClickHerblorePlugin extends Plugin {
             return;
         }
 
-        if (getInventoryItem(ItemID1) == null) {
+        if (getWidgetItem(ItemID1) == null) {
             if (!bankOpen()) {
                 event.setMenuEntry(openBank());
+                timeout++;
                 potsRemaining = false;
                 return;
             }
@@ -321,22 +348,18 @@ public class OneClickHerblorePlugin extends Plugin {
             return;
         }
 
-        if (getInventoryItem(ItemID1) != null && (getInventoryItem(ItemID2) != null)) {
+        if (getWidgetItem(ItemID1) != null && (getWidgetItem(ItemID2) != null)) {
             if(potsRemaining && client.getLocalPlayer().getPoseAnimation() == client.getLocalPlayer().getIdlePoseAnimation()){
                 stage = 1;
                 potsRemaining = false;
             }
             switch (stage) {
                 case 1:
-                    event.setMenuEntry(useItem1(ItemID1));
+                    event.setMenuEntry(useItem1OnItem2());
+                    timeout++;
                     stage = 2;
                     break;
                 case 2:
-                    event.setMenuEntry(useOnItem2(ItemID2));
-                    stage = 3;
-                    timeout++;
-                    break;
-                case 3:
                     event.setMenuEntry(selectMenuAction());
                     potsRemaining = true;
                     timeout +=2;
@@ -363,38 +386,40 @@ public class OneClickHerblorePlugin extends Plugin {
                 true);
     }
 
-    private MenuEntry depositItems() {
-        int itemToDeposit = -1;
-        Collection<WidgetItem> inventoryItems = getInventoryItems();
 
-        for (WidgetItem inventoryItem : inventoryItems) {
-                if(inventoryItem.getId() != ItemID2 || (inventoryItem.getId() == ItemID2 && ItemQuantity2 != 1)) {
-                    itemToDeposit = inventoryItem.getId();
+    private Widget getDepositItem(){
+        Widget bankInventory = client.getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER.getId());
+        if (bankInventory != null && bankInventory.getChildren() != null) {
+            Widget[] items = bankInventory.getChildren();
+            for (Widget item : items) {
+                if (item.getItemId() != ItemID2 || (item.getItemId() == ItemID2 && ItemQuantity2 != 1)) {
+                    System.out.println("found item to deposit");
+                    return item;
                 }
             }
+        }
+        return null;
+    }
 
+    private MenuEntry depositItems() {
+        Widget itemToDeposit = getDepositItem();
         return createMenuEntry(
                 8,
                 MenuAction.CC_OP_LOW_PRIORITY,
-                getInventoryItem(itemToDeposit).getIndex(),
+                itemToDeposit.getIndex(),
                 983043,
                 false);
     }
 
-    private MenuEntry useItem1(int itemid) {
+    private MenuEntry useItem1OnItem2()
+    {
+        client.setSelectedSpellWidget(WidgetInfo.INVENTORY.getId());
+        client.setSelectedSpellChildIndex(getWidgetItem(ItemID1).getIndex());
+        client.setSelectedSpellItemId(ItemID1);
         return createMenuEntry(
-                itemid,
-                MenuAction.ITEM_USE,
-                getInventoryItem(itemid).getIndex(),
-                9764864,
-                true);
-    }
-
-    private MenuEntry useOnItem2(int itemid) {
-        return createMenuEntry(
-                itemid,
-                MenuAction.ITEM_USE_ON_WIDGET_ITEM,
-                getInventoryItem(itemid).getIndex(),
+                0,
+                MenuAction.WIDGET_TARGET_ON_WIDGET,
+                getWidgetItem(ItemID2).getIndex(),
                 9764864,
                 true);
     }

@@ -27,6 +27,7 @@ rootProject.name = "gaels-plugins"
 
 
 include(":oneclickmlm")
+include(":oneclickherblore")
 
 
 for (project in rootProject.children) {
