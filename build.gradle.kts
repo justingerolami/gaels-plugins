@@ -14,12 +14,12 @@ project.extra["GithubUrl"] = "https://github.com/justingerolami/gaels-plugins"
 apply<BootstrapPlugin>()
 
 allprojects {
-    group = "com.openosrs"
+    group = "com.example"
     apply<MavenPublishPlugin>()
 }
 
 subprojects {
-    group = "com.openosrs"
+    group = "com.example"
 
     project.extra["PluginProvider"] = "Gaels"
     project.extra["ProjectSupportUrl"] = ""

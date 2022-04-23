@@ -28,7 +28,7 @@ rootProject.name = "gaels-plugins"
 
 include(":oneclickmlm")
 include(":oneclickherblore")
-
+include(":oneclickglassmaking")
 
 for (project in rootProject.children) {
     project.apply {
