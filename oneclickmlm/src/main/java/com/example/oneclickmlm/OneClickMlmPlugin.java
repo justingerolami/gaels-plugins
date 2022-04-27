@@ -364,7 +364,7 @@ public class OneClickMlmPlugin extends Plugin {
 
         else{ //we are on the main level
             if(getInventQuantity(PAYDIRT) >= 1){
-                if(repairingWheel){
+                if(repairingWheel && needToDeposit){
                     System.out.println("REPAIRING WHEEL");
                     repairWheel(event);
                 }
