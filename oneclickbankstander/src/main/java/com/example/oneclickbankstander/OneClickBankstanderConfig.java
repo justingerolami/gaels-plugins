@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Owain van Brakel <https:github.com/Owain94>
+ * Copyright (c) 2018, Andrew EP | ElPinche256 <https://github.com/ElPinche256>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -22,21 +22,64 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package com.example.oneclickbankstander;
 
-rootProject.name = "gaels-plugins"
+import net.runelite.client.config.Config;
+import net.runelite.client.config.ConfigGroup;
+import net.runelite.client.config.ConfigItem;
+
+@ConfigGroup("OneClickBankstander")
+
+public interface OneClickBankstanderConfig extends Config
+{
+
+	@ConfigItem(
+			position = 0,
+			keyName = "mode",
+			name = "Method",
+			description = "Choose"
+	)
+	default OneClickBankstanderModes mode() { return OneClickBankstanderModes.itemOnItem; }
 
 
-include(":oneclickmlm")
-include(":oneclickherblore")
-include(":oneclickglassmaking")
-include(":oneclickbankstander")
+	@ConfigItem(
+			position = 1,
+			keyName = "itemId1",
+			name = "Item ID 1",
+			description = "Input item ID"
+	)
+	default int itemId1()
+	{
+		return 0;
+	}
 
-for (project in rootProject.children) {
-    project.apply {
-        projectDir = file(name)
-        buildFileName = "$name.gradle.kts"
+	@ConfigItem(
+			position = 2,
+			keyName = "itemId2",
+			name = "Item ID 2",
+			description = "Input item ID"
+	)
+	default int itemId2()
+	{
+		return 0;
+	}
 
-        require(projectDir.isDirectory) { "Project '${project.path} must have a $projectDir directory" }
-        require(buildFile.isFile) { "Project '${project.path} must have a $buildFile build script" }
-    }
+	@ConfigItem(
+			position = 3,
+			keyName = "bankID",
+			name = "Bank ID",
+			description = "Input bank ID,"
+	)
+	default int bankID()
+	{
+		return 0;
+	}
+
+	@ConfigItem(
+			position = 4,
+			keyName = "bankType",
+			name = "Bank Type",
+			description = "Choose"
+	)
+	default OneClickBankstanderBankTypes bankType() { return OneClickBankstanderBankTypes.Booth; }
 }
