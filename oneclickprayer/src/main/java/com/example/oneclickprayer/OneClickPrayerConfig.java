@@ -49,6 +49,16 @@ public interface OneClickPrayerConfig extends Config
 	)
 	default int notedId(){return 0;}
 
+	@ConfigItem(
+			position = 3,
+			keyName = "altarId",
+			name = "Altar ID",
+			description = "What altar ID to use"
+	)
+	default int altarId(){return 13197;}
+
+
+
 
 
 }

@@ -48,6 +48,7 @@ public class OneClickPrayerPlugin extends Plugin {
     private int timeout;
     private int boneId;
     private int notedId;
+    private int altarId;
     private boolean itemsRemaining=false;
     
 
@@ -56,6 +57,7 @@ public class OneClickPrayerPlugin extends Plugin {
         stage = 1;
         boneId = config.boneId();
         notedId = config.notedId();
+        altarId = config.altarId();
     }
 
 
@@ -66,6 +68,7 @@ public class OneClickPrayerPlugin extends Plugin {
         {
             boneId = config.boneId();
             notedId = config.notedId();
+            altarId = config.altarId();
             stage = 1;
             itemsRemaining = false;
         }
@@ -277,9 +280,11 @@ public class OneClickPrayerPlugin extends Plugin {
         client.setSelectedSpellChildIndex(getWidgetItem(boneId).getIndex());
         client.setSelectedSpellItemId(boneId);
 
-        GameObject altar = getGameObject(13197);
+        GameObject altar;
+        altar = getGameObject(altarId);
+
         return createMenuEntry(
-                13197,
+                altarId,
                 MenuAction.WIDGET_TARGET_ON_GAME_OBJECT,
                 getLocation(altar).getX(),
                 getLocation(altar).getY(),
